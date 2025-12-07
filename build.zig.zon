@@ -1,0 +1,13 @@
+.{
+    .name = .zcute_net,
+    .fingerprint = 0x3c1461c202d95c1a,
+    .version = "1.0.3",
+    .minimum_zig_version = "0.15.1",
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "include",
+        "src",
+    },
+    .dependencies = .{},
+}

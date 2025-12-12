@@ -2,7 +2,7 @@ pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
     const opt_use_llvm = b.option(bool, "use-llvm", "");
-    const opt_ipv6_support = b.option(bool, "ipv6-support", "") orelse false;
+    const opt_ipv6_support = b.option(bool, "ipv6-support", "") orelse true;
     const opt_server_max_num_clients = b.option(u16, "server-max-num-clients", "") orelse 32;
 
     const step_install = b.getInstallStep();

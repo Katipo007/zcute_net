@@ -18,6 +18,7 @@ pub fn build(b: *std.Build) void {
     
     const exe = b.addExecutable(.{ ... });
     exe.root_module.addImport("zcute_net", dep_zcute_net.module("zcute_net"));
+    exe.root_module.linkLibrary(dep_zcute_net.artifact("zcute_net"));
 }
 ```
 Now in your code you may import and use `zcute_net`.

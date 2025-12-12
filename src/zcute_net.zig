@@ -404,12 +404,7 @@ pub const crypto = struct {
 
 comptime {
     // Require the exported functions to be present in the resulting binary.
-    _ = zcute_net_allocate;
-    _ = zcute_net_free;
-    _ = zcute_net_assert;
-    _ = zcute_net_memcmp;
-    _ = zcute_net_memcpy;
-    _ = zcute_net_memset;
+    _ = exports;
 }
 
 //
@@ -420,50 +415,52 @@ var mem_allocator: ?std.mem.Allocator = null;
 var mem_allocations: ?std.AutoHashMap(usize, usize) = null;
 var mem_mutex: std.Thread.Mutex = .{};
 const mem_alignment = @alignOf(std.c.max_align_t);
-const assert = zcute_net_assert;
+const assert = exports.zcute_net_assert;
 
-export fn zcute_net_allocate(size: usize, _: ?*anyopaque) callconv(.c) ?*anyopaque {
-    mem_mutex.lock();
-    defer mem_mutex.unlock();
+const exports = struct {
+    export fn zcute_net_allocate(size: usize, _: ?*anyopaque) callconv(.c) ?*anyopaque {
+        mem_mutex.lock();
+        defer mem_mutex.unlock();
 
-    const mem = mem_allocator.?.alignedAlloc(
-        u8,
-        .fromByteUnits(mem_alignment),
-        size,
-    ) catch @panic("zcute_net: out of memory");
+        const mem = mem_allocator.?.alignedAlloc(
+            u8,
+            .fromByteUnits(mem_alignment),
+            size,
+        ) catch @panic("zcute_net: out of memory");
 
-    mem_allocations.?.put(@intFromPtr(mem.ptr), size) catch @panic("zcute_net: out of memory");
+        mem_allocations.?.put(@intFromPtr(mem.ptr), size) catch @panic("zcute_net: out of memory");
 
-    return mem.ptr;
-}
-export fn zcute_net_free(maybe_ptr: [*c]u8, _: ?*anyopaque) callconv(.c) void {
-    const ptr = maybe_ptr orelse return;
+        return mem.ptr;
+    }
+    export fn zcute_net_free(maybe_ptr: [*c]u8, _: ?*anyopaque) callconv(.c) void {
+        const ptr = maybe_ptr orelse return;
 
-    mem_mutex.lock();
-    defer mem_mutex.unlock();
+        mem_mutex.lock();
+        defer mem_mutex.unlock();
 
-    const size = mem_allocations.?.fetchRemove(@intFromPtr(ptr)).?.value;
-    const mem = @as([*]align(mem_alignment) u8, @ptrCast(@alignCast(ptr)))[0..size];
-    mem_allocator.?.free(mem);
-}
-export fn zcute_net_assert(cond: bool) callconv(.c) void {
-    std.debug.assert(cond);
-}
-export fn zcute_net_memcpy(dest: *anyopaque, src: *const anyopaque, count: usize) callconv(.c) *anyopaque {
-    @memcpy(@as([*c]u8, @ptrCast(dest))[0..count], @as([*c]const u8, @ptrCast(src))[0..count]);
-    return dest;
-}
-export fn zcute_net_memset(dest: *anyopaque, ch: c_int, count: usize) callconv(.c) *anyopaque {
-    @memset(@as([*c]u8, @ptrCast(dest))[0..count], @as(u8, @truncate(@as(c_uint, @bitCast(ch)))));
-    return dest;
-}
-export fn zcute_net_memcmp(lhs: *const anyopaque, rhs: *const anyopaque, count: usize) callconv(.c) c_int {
-    return switch (std.mem.order(u8, @as([*c]const u8, @ptrCast(lhs))[0..count], @as([*c]const u8, @ptrCast(rhs))[0..count])) {
-        .eq => 0,
-        .lt => -1,
-        .gt => 1,
-    };
-}
+        const size = mem_allocations.?.fetchRemove(@intFromPtr(ptr)).?.value;
+        const mem = @as([*]align(mem_alignment) u8, @ptrCast(@alignCast(ptr)))[0..size];
+        mem_allocator.?.free(mem);
+    }
+    export fn zcute_net_assert(cond: bool) callconv(.c) void {
+        std.debug.assert(cond);
+    }
+    export fn zcute_net_memcpy(dest: *anyopaque, src: *const anyopaque, count: usize) callconv(.c) *anyopaque {
+        @memcpy(@as([*c]u8, @ptrCast(dest))[0..count], @as([*c]const u8, @ptrCast(src))[0..count]);
+        return dest;
+    }
+    export fn zcute_net_memset(dest: *anyopaque, ch: c_int, count: usize) callconv(.c) *anyopaque {
+        @memset(@as([*c]u8, @ptrCast(dest))[0..count], @as(u8, @truncate(@as(c_uint, @bitCast(ch)))));
+        return dest;
+    }
+    export fn zcute_net_memcmp(lhs: *const anyopaque, rhs: *const anyopaque, count: usize) callconv(.c) c_int {
+        return switch (std.mem.order(u8, @as([*c]const u8, @ptrCast(lhs))[0..count], @as([*c]const u8, @ptrCast(rhs))[0..count])) {
+            .eq => 0,
+            .lt => -1,
+            .gt => 1,
+        };
+    }
+};
 
 const cn_result = extern struct {
     code: enum(c_int) {

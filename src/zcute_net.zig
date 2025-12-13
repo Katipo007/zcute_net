@@ -319,12 +319,8 @@ pub const Server = opaque {
         cn_server_disconnect_client(self, client_index, notify_client);
     }
 
-    pub fn send_unreliably(self: *Server, packet: []const u8, client_index: c_int) !void {
-        const result = cn_server_send(self, @ptrCast(packet.ptr), @intCast(packet.len), client_index, false);
-        try result.as_error();
-    }
-    pub fn send_reliably(self: *Server, packet: []const u8, client_index: c_int) !void {
-        const result = cn_server_send(self, @ptrCast(packet.ptr), @intCast(packet.len), client_index, true);
+    pub fn send(self: *Server, client_index: c_int, channel: ChannelType, packet: []const u8) !void {
+        const result = cn_server_send(self, @ptrCast(packet.ptr), @intCast(packet.len), client_index, channel == .reliable);
         try result.as_error();
     }
 

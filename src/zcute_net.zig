@@ -463,7 +463,7 @@ const cn_result = extern struct {
         success = 0,
         failure = -1,
     },
-    details: [*:0]const u8,
+    details: [*c]const u8,
 
     fn is_error(result: cn_result) bool {
         return result.code != .success;
@@ -473,7 +473,7 @@ const cn_result = extern struct {
         if (!is_error(result))
             return null;
 
-        const details = std.mem.sliceTo(result.details, 0);
+        const details = if (result.details) |details_cstr| std.mem.sliceTo(details_cstr, 0) else return Error.internal_error;
         if (std.mem.startsWith(u8, details, "Unable to initialize endpoint"))
             return Error.invalid_address;
         if (std.mem.startsWith(u8, details, "Unable to initializ"))
